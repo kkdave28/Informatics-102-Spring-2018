@@ -15,7 +15,6 @@ Design ideas:
 #include <cstring>
 #include <vector> // string processing purposes
 #include <sstream>
-
 void split(const std::string& str, const std::string& delim, std::set<std::string> & tokens)
 {
     size_t prev = 0, pos = 0;
@@ -29,19 +28,7 @@ void split(const std::string& str, const std::string& delim, std::set<std::strin
     }
     while (pos < str.length() && prev < str.length());
 }
-void split2(const std::string &s, const char* delim, std::set<std::string> & v){
-    // to avoid modifying original string
-    // first duplicate the original string and return a char pointer then free the memory
-    char * dup = strdup(s.c_str());
-    char * token = strtok(dup, delim);
-    while(token != NULL){
-        v.insert(std::string(token));
-        // the call is treated as a subsequent calls to strtok:
-        // the function continues from where it left in previous invocation
-        token = strtok(NULL, delim);
-    }
-    free(dup);
-}
+
 std::string put_in_map(std::string s, const std::set<std::string>& StopWords)
 {
     if(StopWords.find(s) == StopWords.end())
@@ -71,11 +58,10 @@ int main()
     std::set<std::string> StopWords;
     std::map<std::string, int> FrequencyMap;
     std::vector<std::string> wordline;
+    std::multimap<int, std::string, std::greater<int>> final_map;
     std::ifstream StopWordsStream("stop_words.txt");
     std::ifstream PandP("pride-and-prejudice.txt");
-    std::ofstream OutputFile("frequency.txt");
-    std::ofstream op("such.txt");
-    std::ofstream op2("such2.txt");
+    std::ofstream OutputFile("kkdave_pride-and-prejudice-solution.txt");
     const char* EscapeChars = "!@#$%*()_-[]\"\';:\?/.,\n\0";
     std::string stop_words;
     std::getline(StopWordsStream,stop_words);
@@ -117,15 +103,23 @@ int main()
     //     FrequencyMap[put_in_map(s,StopWords)] +=1;
     // });
 
+    FrequencyMap.erase("");
+    FrequencyMap.erase("s");
     for(auto E: FrequencyMap)
     {
-        OutputFile<<E.first <<" -> "<<E.second<<"\n";
+        final_map.insert(std::pair<int, std::string> (E.second, E.first));
+        //OutputFile<<E.first <<" - "<<E.second<<"\n";
     }
-    // FrequencyMap.erase(std::string("\t"));
-    // FrequencyMap.erase(std::string("\r"));
-    // FrequencyMap.erase(std::string(" "));
-    // FrequencyMap.erase(std::string("\n"));
-    // FrequencyMap.erase(std::string("\0"));
+    std::multimap<int, std::string>:: iterator itr;
+    int i = 1;
+    for(itr = final_map.begin(); itr != final_map.end(); itr++)
+    {
+        if(i >25)
+            break;
+        i++;
+        OutputFile<<itr->second<<"  -  "<<itr->first<<"\n";
+        std::cout<<itr->second<<"  -  "<<itr->first<<std::endl;
+    }
 
 /* Debug Purposes
 

@@ -5,6 +5,4 @@ clean:
 	rm -f frequency
 	rm -f core.*
 	rm -f vgcore.*
-	rm -f frequency.txt
-	rm -f such.txt
-	rm -f such2.txt
+	rm -f kkdave_pride-and-prejudice-solution.txt
