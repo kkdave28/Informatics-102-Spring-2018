@@ -14,8 +14,7 @@ class six
         List<String> stopwords = new ArrayList<String>(Arrays.asList(swstr.split(" ")));
         HashMap<String,Integer> map = new HashMap<String, Integer>();
         for(String x: all_words){if(map.containsKey(x) && !stopwords.contains(x)){map.put(x,map.get(x)+1);}else{map.put(x,1);}}
-        map.remove("s");
-        map.remove("");        
+        map.remove("s");map.remove("");        
         map.entrySet().stream().sorted((k1, k2) -> -k1.getValue().compareTo(k2.getValue())).forEach(k ->{ if(counter >25){return;}else{System.out.println(k.getKey() + "  -  " + k.getValue());counter++;}});
     }
 }

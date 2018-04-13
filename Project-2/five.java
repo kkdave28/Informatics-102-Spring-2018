@@ -2,9 +2,9 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+import java.util.function.Function;
 class five
 {
-    private static String stop_words_file = new String();
     private static String read_file(String path_to_file)throws IOException
     {
         try{
@@ -28,18 +28,27 @@ class five
         String ret = data.replaceAll("[^a-zA-Z0-9]"," ");
         return ret.toLowerCase();
     }
-    private static List<String> remove_stop_words(List<String> word_list)throws IOException
+    private static Function<List<String>, List<String>>remove_stop_words(String filename)throws IOException
     {
-        List<String> stop_words = scan(filter_chars_and_normalize(read_file(stop_words_file)));
+        return (List<String> all_words)->{
+            try{
+        List<String> stop_words = scan(filter_chars_and_normalize(read_file(filename)));
         List<String> ret = new ArrayList<String>();
-        for(int i=0; i<word_list.size(); i++)
+        for(int i=0; i<all_words.size(); i++)
         {
-            if(!stop_words.contains(word_list.get(i)))
+            if(!stop_words.contains(all_words.get(i)))
             {
-                ret.add(word_list.get(i));
+                ret.add(all_words.get(i));
             }
         }
         return ret;
+    }
+    catch (IOException e){
+        return null;
+    }
+
+    };
+
     }
     private static HashMap<String,Integer> sort(HashMap<String, Integer> map) { 
         List list = new LinkedList(map.entrySet());
@@ -90,8 +99,7 @@ class five
     {
         try
         {
-            stop_words_file = args[1];
-            print_all(sort(frequencies(remove_stop_words(scan(filter_chars_and_normalize(read_file(args[0])))))));
+            print_all(sort(frequencies((remove_stop_words(args[1])).apply(scan(filter_chars_and_normalize(read_file(args[0])))))));
         }
         catch (IOException e)
         {
