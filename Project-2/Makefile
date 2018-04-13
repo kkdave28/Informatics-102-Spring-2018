@@ -1,4 +1,4 @@
 default:
-	javac five1.java
+	javac five.java
 clean:
 	rm -f *.class

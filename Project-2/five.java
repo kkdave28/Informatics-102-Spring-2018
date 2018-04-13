@@ -1,7 +1,7 @@
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-class five1
+class five
 {
 
     private static String read_file(String path_to_file)throws IOException
@@ -74,19 +74,22 @@ class five1
         ret.remove("s");
         return ret;
     }
-    public static void main(String args[])
+    private static void print_all(HashMap<String, Integer> word_dict)
     {
-        try
-        {
-        HashMap<String, Integer> sw = sort(frequencies(remove_stop_words(scan(filter_chars_and_normalize(read_file("pride-and-prejudice.txt"))))));
         int i = 1;
-        for(Map.Entry<String, Integer> entry : sw.entrySet())
+        for(Map.Entry<String, Integer> entry : word_dict.entrySet())
         {
             if(i>25)
             {break;}
             System.out.println(entry.getKey() + "  -  "+ entry.getValue());
             i++;
         }
+    }
+    public static void main(String args[])
+    {
+        try
+        {
+        print_all(sort(frequencies(remove_stop_words(scan(filter_chars_and_normalize(read_file(args[0])))))));
         }
         catch (IOException e)
         {
