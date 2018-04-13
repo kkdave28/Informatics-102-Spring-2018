@@ -1,9 +1,10 @@
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+
 class five
 {
-
+    private static String stop_words_file = new String();
     private static String read_file(String path_to_file)throws IOException
     {
         try{
@@ -29,7 +30,7 @@ class five
     }
     private static List<String> remove_stop_words(List<String> word_list)throws IOException
     {
-        List<String> stop_words = scan(filter_chars_and_normalize(read_file("stop_words.txt")));
+        List<String> stop_words = scan(filter_chars_and_normalize(read_file(stop_words_file)));
         List<String> ret = new ArrayList<String>();
         for(int i=0; i<word_list.size(); i++)
         {
@@ -89,7 +90,8 @@ class five
     {
         try
         {
-        print_all(sort(frequencies(remove_stop_words(scan(filter_chars_and_normalize(read_file(args[0])))))));
+            stop_words_file = args[1];
+            print_all(sort(frequencies(remove_stop_words(scan(filter_chars_and_normalize(read_file(args[0])))))));
         }
         catch (IOException e)
         {

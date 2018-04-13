@@ -26,7 +26,7 @@ for exe in executables:
 		output = subprocess.check_output([file_path, stop_words_loc, text_loc]).splitlines()
 	else:
 		file_path = exe
-		output = subprocess.check_output([interpreter, file_path, text_loc]).splitlines()
+		output = subprocess.check_output([interpreter, file_path, text_loc, stop_words_loc]).splitlines()
 
 	solution = ""
 	with open (solution_loc, "r") as f:
