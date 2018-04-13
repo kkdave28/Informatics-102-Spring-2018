@@ -3,7 +3,7 @@
 import subprocess
 import os
 
-executables = ['five']
+executables = ['fivetwo']
 interpreter = 'java'
 text_file = 'pride-and-prejudice.txt'
 stop_words_file = 'stop_words.txt'

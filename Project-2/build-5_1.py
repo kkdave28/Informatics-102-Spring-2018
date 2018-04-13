@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import subprocess
 
-executables = ['five.java']
+executables = ['five_1.java']
 compiler = 'javac'
 
 for exe in executables:

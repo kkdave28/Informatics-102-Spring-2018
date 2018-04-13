@@ -3,7 +3,7 @@ import java.nio.file.*;
 import java.util.*;
 
 import java.util.function.Function;
-class five
+class fivetwo
 {
     private static String read_file(String path_to_file)throws IOException
     {
