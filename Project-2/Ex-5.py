@@ -11,7 +11,10 @@
  11 """
  12 with open(path_to_file) as f:
  13     data = f.read()
- 14 return data
+ 14 return dataasknldnaskdsaldnaskldnsada
+ asdnkasjdbnaskjdbaksjdbaksjbdaskjdba
+ dasdbaskjdbaskjdbaskjdbaskjdbaskjdbasd
+ asndblkasdbnladbladbaldbalsdblakd
  15
  16 def filter_chars_and_normalize(str_data):
  17 """
