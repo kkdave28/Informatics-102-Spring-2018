@@ -1,0 +1,8 @@
+Number of edges = E = 53
+Number of nodes = N = 41
+Number of Exit Nodes = P = 1
+
+Cyclomatic Complexity C = E - N + 2*P
+                        = 53 - 41 + 2*1
+                        = 14
+As Cyclomatic Complexity C lies between 10 and 20 i.e 10< 14< 20, this program poses moderate risk.
