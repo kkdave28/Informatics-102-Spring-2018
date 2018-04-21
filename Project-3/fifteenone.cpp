@@ -7,8 +7,7 @@
 #include <fstream>
 #include <cstring>
 #include <sstream>
-static std::string null_string = "";
-void no_func(std::pair<std::string, std::string> event = std::pair<std::string, std::string>("","")){}
+
 void removeCharsFromString( std::string &str, const char* charsToRemove ) // This function explicitly removes all the special characters from the string.
 {
    for ( unsigned int i = 0; i < std::strlen(charsToRemove); ++i ) // each character in the string of special characters
@@ -43,19 +42,19 @@ class EventManager
 {
     public:
         EventManager(){}
-        void subscribe(std::string event_type, std::function<void(std::pair<std::string, std::string>, std::string&)> handler)
+        void subscribe(std::string event_type, std::function<void(std::pair<std::string, std::string>)> handler)
         {
             subs[event_type].push_back(handler);
         }
-        void publish(std::pair<std::string, std::string> event, std::string& buf=null_string)
+        void publish(std::pair<std::string, std::string> event)
         {
             for(auto E: subs[event.first])
             {
-                E(event,buf);
+                E(event);
             }
         }
     private:
-        std::map<std::string, std::vector<std::function<void(std::pair<std::string, std::string>, std::string&)>>> subs;
+        std::map<std::string, std::vector<std::function<void(std::pair<std::string, std::string>)>>> subs;
 };
 
 class DataStorage
@@ -65,10 +64,10 @@ class DataStorage
         {
             using namespace std::placeholders;
             em = event_manager;
-            em->subscribe("load", std::bind(&DataStorage::load, this, _1, _2));
-            em->subscribe("start", std::bind(&DataStorage::produce_words, this, _1, _2));
+            em->subscribe("load", std::bind(&DataStorage::load, this, _1));
+            em->subscribe("start", std::bind(&DataStorage::produce_words, this, _1));
         }
-        void load(std::pair<std::string, std::string> event, std::string& temp=null_string)
+        void load(std::pair<std::string, std::string> event)
         {
             std::ifstream PandP(event.second);
             std::string buf;
@@ -96,7 +95,7 @@ class DataStorage
                 }
             }   
         }
-        void produce_words(std::pair<std::string, std::string> event, std::string& buf=null_string)
+        void produce_words(std::pair<std::string, std::string> event)
         {
             for(auto E: data)
             {
@@ -115,11 +114,11 @@ class StopWordsFilter
         {
             using namespace std::placeholders;
             em = event_manager;
-            em->subscribe("load", std::bind(&StopWordsFilter::load, this, _1, _2));
-            em->subscribe("word", std::bind(&StopWordsFilter::is_stop_word, this, _1, _2));
+            em->subscribe("load", std::bind(&StopWordsFilter::load, this, _1));
+            em->subscribe("word", std::bind(&StopWordsFilter::is_stop_word, this, _1));
 
         }
-        void load(std::pair<std::string, std::string> event = std::pair<std::string, std::string>("",""), std::string& buf=null_string)
+        void load(std::pair<std::string, std::string> event = std::pair<std::string, std::string>("",""))
         {
             std::ifstream StopWordsStream("../stop_words.txt");
             std::string stop_words_string;
@@ -127,14 +126,14 @@ class StopWordsFilter
             stop_words_string = convert_to_lower(stop_words_string);
             split(stop_words_string, ",", stop_words);
         }
-        void is_stop_word(std::pair<std::string, std::string> event, std::string &buf)
+        void is_stop_word(std::pair<std::string, std::string> event)
         {
-            buf = event.second;            
+
             for(auto E: stop_words)
             {
                 if(E == event.second)
                 {
-                    buf = "";
+
                     return;
                 }
             }
@@ -152,15 +151,15 @@ class WordFrequencyCounter
         {
             using namespace std::placeholders;
             em = event_manager;
-            em->subscribe("valid_word", std::bind(&WordFrequencyCounter::increment_count, this, _1, _2));
-            em->subscribe("print", std::bind(&WordFrequencyCounter::print_freqs, this, _1, _2));
+            em->subscribe("valid_word", std::bind(&WordFrequencyCounter::increment_count, this, _1));
+            em->subscribe("print", std::bind(&WordFrequencyCounter::print_freqs, this, _1));
 
         }
-        void increment_count(std::pair<std::string, std::string> event, std::string& buf=null_string)
+        void increment_count(std::pair<std::string, std::string> event)
         {
             word_freqs[event.second]+=1;
         }
-        void print_freqs(std::pair<std::string, std::string> event = std::pair<std::string, std::string>("",""), std::string& buf=null_string)
+        void print_freqs(std::pair<std::string, std::string> event = std::pair<std::string, std::string>("",""))
         {
             word_freqs.erase("");
             word_freqs.erase("s");
@@ -191,16 +190,16 @@ class WordFrequencyApp
         {
             using namespace std::placeholders;
             em = event_manager;
-            em->subscribe("run", std::bind(&WordFrequencyApp::run, this, _1, _2));
-            em->subscribe("eof", std::bind(&WordFrequencyApp::stop, this, _1, _2));
+            em->subscribe("run", std::bind(&WordFrequencyApp::run, this, _1));
+            em->subscribe("eof", std::bind(&WordFrequencyApp::stop, this, _1));
         }
-        void run(std::pair<std::string, std::string> event, std::string& buf=null_string)
+        void run(std::pair<std::string, std::string> event)
         {
             em->publish(std::pair<std::string, std::string>("load", event.second));
             em->publish(std::pair<std::string, std::string>("start", ""));
 
         }
-        void stop(std::pair<std::string, std::string> event, std::string& buf=null_string)
+        void stop(std::pair<std::string, std::string> event)
         {
             em->publish(std::pair<std::string, std::string>("print", ""));
         }
