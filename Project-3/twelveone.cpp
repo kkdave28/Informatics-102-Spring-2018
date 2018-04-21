@@ -76,6 +76,7 @@ void load_stop_words(std::map<std::string, void*> StopWordsObject)
     std::ifstream StopWordsStream("../stop_words.txt");
     std::string stop_words;
     std::getline(StopWordsStream, stop_words);
+    stop_words = convert_to_lower(stop_words);
     split(stop_words, ",", (*reinterpret_cast<std::vector<std::string>*>(StopWordsObject["stop_words"])));
 }
 void check_stop_word(std::string word, std::map<std::string, void*> StopWordsObject, std::string& buf)
@@ -116,6 +117,8 @@ int main(int argc, char * argv[])
     std::vector<std::string> stop_words;
     std::map<std::string, int> temp_freq;
     std::multimap<int, std::string, std::greater<int>> final_map;
+
+    
     std::map<std::string, void*> DataStorageObject;
     std::map<std::string, void*> StopWordsObject;
     std::map<std::string, void*> WordFrequencyObject;
@@ -141,9 +144,7 @@ int main(int argc, char * argv[])
    {
        std::string buf = "";
        reinterpret_cast<void(*)(std::string, std::map<std::string, void*>, std::string&)>(StopWordsObject["is_stop_word"]) (E, StopWordsObject, buf);
-       reinterpret_cast<void (*)(std::string, std::map<std::string, void*>)>(WordFrequencyObject["increment_count"]) (
-           buf, WordFrequencyObject
-       );
+       reinterpret_cast<void (*)(std::string, std::map<std::string, void*>)>(WordFrequencyObject["increment_count"]) (buf, WordFrequencyObject);
    }
    reinterpret_cast<void(*)(std::map<std::string, void*>, std::multimap<int, std::string, std::greater<int>>*)>(WordFrequencyObject["sorted"])(WordFrequencyObject, &final_map);
 
