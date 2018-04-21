@@ -93,9 +93,13 @@ class StopWordFilter
         void is_stop_word(std::string word, std::string & buf)
         {
             buf = word;
-            if(std::find(stop_words.begin(), stop_words.end(), word) != stop_words.end())
+            for(auto E: stop_words)
             {
-                buf = "";
+                if(E == word)
+                {
+                    buf = "";
+                    return;
+                }
             }
         }
     private:
@@ -105,7 +109,7 @@ class StopWordFilter
 class DataStorage
 {
     public:
-        DataStorage(WordFrequencyFramework &wfapp, StopWordFilter& stop_word_filter)
+        DataStorage(WordFrequencyFramework &wfapp, StopWordFilter* stop_word_filter)
         {
             using namespace std::placeholders;
             stop_words_filter = stop_word_filter;
@@ -147,7 +151,7 @@ class DataStorage
             for(auto E: data)
             {
                 std::string buf = "";
-                stop_words_filter.is_stop_word(E,buf);
+                stop_words_filter->is_stop_word(E,buf);
                 for (auto F: word_event_handlers)
                 {
                     F(buf);
@@ -161,7 +165,7 @@ class DataStorage
 
     private:
         std::vector<std::string> data;
-        StopWordFilter stop_words_filter;
+        StopWordFilter *stop_words_filter;
         std::vector<std::function<void(std::string)>> word_event_handlers;
 };
 
@@ -181,6 +185,8 @@ class WordFrequencyCounter
         }
         void print_freqs()
         {
+            word_freqs.erase("");
+            word_freqs.erase("s");
             std::multimap<int, std::string, std::greater<int>> final_map;
             for(auto E: word_freqs)
             {
@@ -204,7 +210,7 @@ int main(int argc, char * argv[])
 
     WordFrequencyFramework wfapp;
     StopWordFilter stop_word_filter(wfapp);
-    DataStorage data_storage(wfapp, stop_word_filter);
+    DataStorage data_storage(wfapp, &stop_word_filter);
     WordFrequencyCounter word_freq_counter(wfapp, data_storage);
     wfapp.run(argv[1]);
     return 0;
