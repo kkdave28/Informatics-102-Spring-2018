@@ -137,8 +137,7 @@ int main(int argc, char * argv[])
     {
         limit = std::min(i+RECUSION_LIMIT, data.size());
         count(std::vector<std::string>(data.begin()+i, data.begin()+i+RECUSION_LIMIT), stop_word, &word_freqs);
-        
-        
+    
     }
     sort(&word_freqs, &final_map);
     int count =0;
