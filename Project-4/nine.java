@@ -73,7 +73,6 @@ class nine
         ret.remove("s");
         return ret;
 
-        //return data;
     }
     private static Object sort(Object word_freqs_map)
     {		

@@ -140,12 +140,6 @@ void filter_chars(std::vector<std::string> data, void * next_func)
     {
         removeCharsFromString(data[i],EscapeChars);
     }
-    // while(std::find(data.begin(),data.end()," ") != data.end())
-    // {
-    //     std::vector<std::string>::iterator iter;
-    //     iter = find(data.begin(),data.end()," ");
-    //     data.erase(iter); // remove them from the vector
-    // }
     reinterpret_cast<void(*)(std::vector<std::string>, void*)>(next_func)(data, (void*)scan);
 }
 void read_file(std::string filename, void * next_func)
