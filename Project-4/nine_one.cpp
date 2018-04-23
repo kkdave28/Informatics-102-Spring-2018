@@ -111,9 +111,9 @@ std::ostream & operator<<(std::ostream& out, custom_object& c)
 class TFTheOne
 {
     public:
-        TFTheOne(custom_object c)
+        TFTheOne(std::string filename)
         {
-            value = c;
+            value.get_filename() = filename;
         }
         TFTheOne bind(std::function<custom_object &(custom_object&)> func)
         {
@@ -237,8 +237,8 @@ custom_object& top25_freqs(custom_object& final_map)
 }
 int main(int argc, char*argv[])
 {
-    custom_object x(argv[1]);
-    TFTheOne(x).bind(read_file).bind(filter_chars).bind(normalize).bind(scan).bind(remove_stop_words).bind(frequencies).bind(sort).bind(top25_freqs).printme();
+    // custom_object x(argv[1]);
+    TFTheOne(argv[1]).bind(read_file).bind(filter_chars).bind(normalize).bind(scan).bind(remove_stop_words).bind(frequencies).bind(sort).bind(top25_freqs).printme();
     //custom_object c = stuff(a);
     //c.get_data().push_back("Hello Word");
     return 0;
