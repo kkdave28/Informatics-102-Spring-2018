@@ -126,7 +126,7 @@ class TFTheOne
         }
         void printme()
         {
-            std::cout<<value.get_print_string();
+            std::cout<<value;
         }
 
     private:

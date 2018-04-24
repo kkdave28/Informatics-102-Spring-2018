@@ -7,7 +7,7 @@
 #include <fstream>
 #include <cstring>
 #include <sstream>
-#define RECUSION_LIMIT 2000
+#define RECUSION_LIMIT 2500
 void removeCharsFromString( std::string &str, const char* charsToRemove ) // This function explicitly removes all the special characters from the string.
 {
    for ( unsigned int i = 0; i < std::strlen(charsToRemove); ++i ) // each character in the string of special characters
@@ -136,7 +136,7 @@ int main(int argc, char * argv[])
     for(size_t i=0; i< data.size(); i+= RECUSION_LIMIT)
     {
         limit = std::min(i+RECUSION_LIMIT, data.size());
-        count(std::vector<std::string>(data.begin()+i, data.begin()+i+RECUSION_LIMIT), stop_word, &word_freqs);
+        count(std::vector<std::string>(data.begin()+i, data.begin()+limit), stop_word, &word_freqs);
     
     }
     sort(&word_freqs, &final_map);
