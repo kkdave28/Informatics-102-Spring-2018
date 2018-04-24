@@ -53,8 +53,12 @@ class custom_object
 {
     public:
         custom_object(std::string fn ="",std::vector<std::string>dat = std::vector<std::string>(),std::map<std::string, int> wf =std::map<std::string, int>(),
-        std::multimap<int, std::string, std::greater<int>> f_map = std::multimap<int, std::string, std::greater<int>>(), std::string ps=""):filename(fn), data(dat),
-        word_freqs(wf), final_map(f_map), print_string(ps){}
+        std::multimap<int, std::string, std::greater<int>> f_map = std::multimap<int, std::string, std::greater<int>>(), std::string ps="")
+        :filename(fn), data(dat), word_freqs(wf), final_map(f_map), print_string(ps)
+        {
+            //Empty, all initialization has been done in the initializer list.
+        }
+        
         custom_object(const custom_object& co)
         {
             data = co.data;
@@ -237,9 +241,6 @@ custom_object& top25_freqs(custom_object& final_map)
 }
 int main(int argc, char*argv[])
 {
-    // custom_object x(argv[1]);
     TFTheOne(argv[1]).bind(read_file).bind(filter_chars).bind(normalize).bind(scan).bind(remove_stop_words).bind(frequencies).bind(sort).bind(top25_freqs).printme();
-    //custom_object c = stuff(a);
-    //c.get_data().push_back("Hello Word");
     return 0;
 }
