@@ -7,7 +7,7 @@
 #include <fstream>
 #include <cstring>
 #include <sstream>
-
+bool debug = true;
 extern "C" std::vector<std::pair<std::string, int>> top25_freqs(std::vector<std::string> data)
 {
     std::map<std::string, int> temp_map;
@@ -32,6 +32,10 @@ extern "C" std::vector<std::pair<std::string, int>> top25_freqs(std::vector<std:
             break;
         i++;
         fin_map.push_back(std::pair<std::string,int>(itr->second, itr->first));
+    }
+    if(debug)
+    {
+        std::cout<<"Printing from freq1"<<std::endl;
     }
     return fin_map;
 

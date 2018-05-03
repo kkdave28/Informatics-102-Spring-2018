@@ -9,7 +9,7 @@
 #include <fstream>
 #include <cstring>
 #include <sstream>
-
+bool debug = true;
 void split(const std::string& str, const std::string& delim, std::vector<std::string> & tokens) // split functions allows the user to split the string w.r.t. the delimiter specified
 {
     size_t prev = 0, pos = 0;
@@ -92,7 +92,10 @@ extern "C" std::vector<std::string> extract_words(std::string filename)
         is_stop_word(retbuf,StopWords);
         ret.push_back(retbuf);
     }
-    
+    if(debug)
+    {
+        std::cout<<"Printing from words1"<<std::endl;
+    }
     return ret;
 
 

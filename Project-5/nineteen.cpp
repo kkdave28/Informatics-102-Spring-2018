@@ -16,7 +16,7 @@
 
 void * term_words = nullptr;
 void * term_freq = nullptr;
-
+//Get pull request before submitting for boost libraries.
 void load_plugins()
 {
     boost::property_tree::ptree pt;
