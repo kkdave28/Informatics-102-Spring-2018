@@ -16,7 +16,7 @@ class TFExercise():
 class DataStorageManager(TFExercise):
     """ Models the contents of the file """
     
-    def __init__(self, path_to_file=None):
+    def __init__(self, path_to_file):
         with open(path_to_file) as f:
             self._data = f.read()
         pattern = re.compile('[\W_]+')
@@ -63,15 +63,11 @@ class WordFrequencyManager(TFExercise):
         print( super(WordFrequencyManager, self).info() + ": My major data structure is a " + self._word_freqs.__class__.__name__ +" \n" +"Methods implemented are:\n" + "- increment_count(self,word)\n"+ "- sorted(self)\n" + "- info(self)\n")
 
 class WordFrequencyController(TFExercise):
-    def __init__(self, path_to_file=None):
+    def __init__(self, path_to_file):
         self._storage_manager = DataStorageManager(path_to_file)
         self._stop_word_manager = StopWordManager()
         self._word_freq_manager = WordFrequencyManager()
-        #atexit.register(self._stop_word_manager.info)
-        #atexit.register(self._storage_manager.info)
-        #atexit.register(self._word_freq_manager.info)
-        #atexit.register(TFExercise.info)
-        #atexit.register(self.info)
+
 
     def run(self):
         for w in self._storage_manager.words():
@@ -84,9 +80,7 @@ class WordFrequencyController(TFExercise):
     def info(self):
         print(super(WordFrequencyController,self).info() + ": Classes I manage are " + self._storage_manager.__class__.__name__ + " " + self._stop_word_manager.__class__.__name__+" "+ self._word_freq_manager.__class__.__name__ +"\n"+"Methods implemented are:\n" + "- run(self)\n"+ "- info(self)\n")
 
-#
-# The main function
-#
+
 if __name__ == "__main__":
     WordFrequencyController(sys.argv[1]).run()
     print("\n")
@@ -96,7 +90,5 @@ if __name__ == "__main__":
             continue
         if name != 'ABCMeta' and name != "TFExercise":
             str = name +"(sys.argv[1]).info()"
-            #print(str)
             eval(str)
-        #print '%s :' % name, repr(data)
     
