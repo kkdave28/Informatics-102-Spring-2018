@@ -14,8 +14,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
-void * term_words = nullptr;
-void * term_freq = nullptr;
+void * term_words = nullptr; // function pointer
+void * term_freq = nullptr; // function pointer
 //Get pull request before submitting for boost libraries.
 void load_plugins()
 {
@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
 {
 
     load_plugins();
-
     std::vector<std::pair<std::string,int>> fin_map;
     fin_map = reinterpret_cast<std::vector<std::pair<std::string,int>> (*) (std::vector<std::string>)>(term_freq)(reinterpret_cast<std::vector<std::string> (*) (std::string)> (term_words)(argv[1]));
     for(auto E: fin_map)
