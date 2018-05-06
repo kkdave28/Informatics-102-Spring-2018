@@ -9,7 +9,7 @@
 #include <fstream>
 #include <cstring>
 #include <sstream>
-bool debug = true;
+bool debug = false;
 void split(const std::string& str, const std::string& delim, std::vector<std::string> & tokens) // split functions allows the user to split the string w.r.t. the delimiter specified
 {
     size_t prev = 0, pos = 0;

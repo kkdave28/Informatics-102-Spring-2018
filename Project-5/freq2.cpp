@@ -8,7 +8,7 @@
 #include <cstring>
 #include <sstream>
 #include <unordered_map>
-bool debug = true;
+bool debug = false;
 void sort_map(std::map<std::string, void*> WordFrequencyObject, std::multimap<int, std::string, std::greater<int>>*final_map)
 {
     (*reinterpret_cast<std::map<std::string, int>*>(WordFrequencyObject["freqs"])).erase("");

@@ -10,7 +10,7 @@
 #include <cstring>
 #include <sstream>
 #include <unordered_map>
-bool debug = true;
+bool debug = false;
 void removeCharsFromString( std::string &str, const char* charsToRemove ) // This function explicitly removes all the special characters from the string.
 {
    for ( unsigned int i = 0; i < std::strlen(charsToRemove); ++i ) // each character in the string of special characters
