@@ -1,6 +1,7 @@
 24:
-	g++ twentyfour.cpp -O3 -std=c++11 -o twentyfour
+	g++ -std=c++11 twentyfour.cpp -o twentyfour
 clean:
 	rm -f twentyfour
 	rm -f core.*
 	rm -f vgcore.*
+	rm -f *.class
