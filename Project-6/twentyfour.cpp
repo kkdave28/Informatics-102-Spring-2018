@@ -5,8 +5,9 @@
 #include <iterator>
 #include <vector>
 #include <fstream>
-#include <cstring>
+#include <cstring> 
 #include <sstream>
+typedef std::function<std::vector<std::string>(std::vector<std::string>)> FunctionObject;
 void removeCharsFromString( std::string &str, const char* charsToRemove ) // This function explicitly removes all the special characters from the string.
 {
    for ( unsigned int i = 0; i < std::strlen(charsToRemove); ++i ) // each character in the string of special characters
@@ -53,8 +54,8 @@ class custom_object
 {
     public:
         custom_object(std::string fn ="",std::vector<std::string>dat = std::vector<std::string>(),std::map<std::string, int> wf =std::map<std::string, int>(),
-        std::multimap<int, std::string, std::greater<int>> f_map = std::multimap<int, std::string, std::greater<int>>(), std::string ps="")
-        :filename(fn), data(dat), word_freqs(wf), final_map(f_map), print_string(ps)
+        std::multimap<int, std::string, std::greater<int>> f_map = std::multimap<int, std::string, std::greater<int>>(), std::string ps="", bool fnset = false)
+        :filename(fn), data(dat), word_freqs(wf), final_map(f_map), print_string(ps), function_set(fnset)
         {
             //Empty, all initialization has been done in the initializer list.
         }
@@ -106,141 +107,30 @@ class custom_object
         std::multimap<int, std::string, std::greater<int>> final_map;
         std::string print_string;
         std::string filename;
+        FunctionObject quarantine_obj;
+        bool function_set;
 };
 std::ostream & operator<<(std::ostream& out, custom_object& c)
 {
     c.print(out);
     return out;
 }
-class TFTheOne
+FunctionObject get_input(const char * arg)
 {
-    public:
-        TFTheOne(std::string filename)
-        {
-            value.get_filename() = filename;
-        }
-        TFTheOne bind(std::function<custom_object &(custom_object&)> func)
-        {
-            value = func(value);
-            return *this;
-        }
-        void printme()
-        {
-            std::cout<<value;
-        }
 
-    private:
-        custom_object value;
-};
-custom_object& read_file(custom_object& path_to_file)
-{
-    std::ifstream PandP(path_to_file.get_filename());
-    std::string buf;
-    while(PandP && std::getline(PandP, buf)) // processing the iput file
+    return [arg](std::vector<std::string>)
     {
-        if(buf.length() == 0) // if the line read is an empty line
-        {
-            continue;
-        }
-        else
-        {
-            path_to_file.get_data().push_back(buf);
-        }
-    }
-    return path_to_file;
-    
+        std::vector<std::string> x;
+        x.push_back(arg);
+        return x;
+    };
 }
-custom_object& filter_chars(custom_object& str_data)
+int main(int argc, char const *argv[])
 {
-    const char* EscapeChars = "!@#$%*()_-[]\"\';:\?/.,\n\0";
-    for(int i=0; i< str_data.get_data().size(); i++)
-    {
-        removeCharsFromString(str_data.get_data()[i], EscapeChars);
-    }
-    return str_data;
 
-}
-custom_object& normalize(custom_object& str_data)
-{
-    for(int i=0; i< str_data.get_data().size(); i++)
-    {
-        str_data.get_data()[i] = convert_to_lower(str_data.get_data()[i]);
-    }
-    return str_data;
-}
-custom_object& scan(custom_object& str_data)
-{
-    std::vector<std::string> word_list;
-    for(auto E: str_data.get_data())
-    {
-        std::istringstream iss(E);
-        std::copy(std::istream_iterator<std::string>(iss),std::istream_iterator<std::string>(),std::back_inserter(word_list));
-        while(std::find(word_list.begin(),word_list.end()," ") != word_list.end()) // find the extra space charaters in the vector 
-        {
-            std::vector<std::string>::iterator iter;
-            iter = find(word_list.begin(),word_list.end()," ");
-            word_list.erase(iter); // remove them from the vector
-        }
-    }
-    str_data.get_data() = word_list;
-    return str_data;
-}
-custom_object& remove_stop_words(custom_object& data)
-{
-    std::vector<std::string> stop_word;
-    std::ifstream StopWordsStream("../stop_words.txt");
-    std::string stop_words_string;
-    std::getline(StopWordsStream, stop_words_string);
-    stop_words_string = convert_to_lower(stop_words_string);
-    split(stop_words_string, ",", stop_word);
+    FunctionObject x = get_input("lmao");
+    std::vector<std::string> lma;
+    std::cout<<x(lma)[0]<<std::endl;
 
-    std::vector<std::string> word_list;
-
-    for(auto E: data.get_data())
-    {
-        std::string buf = E;
-        is_stop_word(buf, stop_word);
-        word_list.push_back(buf);
-    }
-    data.get_data() = word_list;
-    return data;
-}
-
-custom_object& frequencies(custom_object& word_list)
-{
-    for(auto E: word_list.get_data())
-    {
-        word_list.get_word_freq()[E]+=1;
-    }
-    return word_list;
-}
-
-custom_object& sort(custom_object& word_freqs)
-{
-    word_freqs.get_word_freq().erase("");
-    word_freqs.get_word_freq().erase("s");
-    for(auto E: word_freqs.get_word_freq())
-    {
-        word_freqs.get_final_map().insert(std::pair<int, std::string>(E.second, E.first));
-    }
-    return word_freqs;
-}
-custom_object& top25_freqs(custom_object& final_map)
-{
-    std::multimap<int, std::string>:: iterator itr;
-    int i=i;
-    std::stringstream buf;
-    for(itr = final_map.get_final_map().begin(); itr != final_map.get_final_map().end(); itr++)
-    {
-        if(i>24){break;}
-        i++;
-        buf<<itr->second<<"  -  "<<itr->first<<"\n";
-    }
-    final_map.get_print_string() = buf.str();
-    return final_map;
-}
-int main(int argc, char*argv[])
-{
-    TFTheOne(argv[1]).bind(read_file).bind(filter_chars).bind(normalize).bind(scan).bind(remove_stop_words).bind(frequencies).bind(sort).bind(top25_freqs).printme();
     return 0;
 }
