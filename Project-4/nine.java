@@ -101,16 +101,17 @@ class nine
     }
 }
 
-class TermFrequencyTheOne
+class TermFrequencyQuarantine
 {
     private Object val;
-    TermFrequencyTheOne(Object v)
+    private List<Object> all_funcs;
+    TermFrequencyQuarantine(Object v)
     {
-        val = v;
+       all_funcs.add(v);
     }
-    public TermFrequencyTheOne bind(Function<Object, Object> func)
+    public TermFrequencyTheOne bind(Object func)
     {
-        this.val = func.apply(this.val);
+        all_funcs.add(func);
         return this;
     }
     public void printme()
