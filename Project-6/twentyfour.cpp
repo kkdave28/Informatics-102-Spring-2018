@@ -81,6 +81,18 @@ class custom_object
             is_fnc_set = co.is_fnc_set;
             return *this;
         }
+        custom_object& operator()()
+        {
+            if(fcn_set())
+            {
+                fcn_set() = false;
+                return fcn_obj(*this);
+            }
+            else
+            {
+                return *this;
+            }
+        }
         std::vector<std::string> & get_data()
         {
             return data;
@@ -143,19 +155,11 @@ class TFQuarantine
         void execute()
         {
             FuncObj guard_callable = [](custom_object&v)-> custom_object&{
-                if(v.fcn_set())
-                {
-                    v.fcn_set() = false;
-                    return v.get_fcn_obj()(v);
-                }
-                else
-                {
-                    return v;
-                }
+                return v();
             };
-            for(auto E: all_funcs)
+            for(auto func: all_funcs)
             {
-                value = E(guard_callable(value));
+                value = func(guard_callable(value));
             }
             std::cout<<value;
         }
