@@ -242,80 +242,6 @@ custom_object& remove_stop_words(custom_object & data)
     return data;
 }
 
-// custom_object& read_file(custom_object& path_to_file)
-// {
-//     std::ifstream PandP(path_to_file.get_filename());
-//     std::string buf;
-//     while(PandP && std::getline(PandP, buf)) // processing the iput file
-//     {
-//         if(buf.length() == 0) // if the line read is an empty line
-//         {
-//             continue;
-//         }
-//         else
-//         {
-//             path_to_file.get_data().push_back(buf);
-//         }
-//     }
-//     return path_to_file;
-    
-// }
-// custom_object& filter_chars(custom_object& str_data)
-// {
-//     const char* EscapeChars = "!@#$%*()_-[]\"\';:\?/.,\n\0";
-//     for(int i=0; i< str_data.get_data().size(); i++)
-//     {
-//         removeCharsFromString(str_data.get_data()[i], EscapeChars);
-//     }
-//     return str_data;
-
-// }
-// custom_object& normalize(custom_object& str_data)
-// {
-//     for(int i=0; i< str_data.get_data().size(); i++)
-//     {
-//         str_data.get_data()[i] = convert_to_lower(str_data.get_data()[i]);
-//     }
-//     return str_data;
-// }
-// custom_object& scan(custom_object& str_data)
-// {
-//     std::vector<std::string> word_list;
-//     for(auto E: str_data.get_data())
-//     {
-//         std::istringstream iss(E);
-//         std::copy(std::istream_iterator<std::string>(iss),std::istream_iterator<std::string>(),std::back_inserter(word_list));
-//         while(std::find(word_list.begin(),word_list.end()," ") != word_list.end()) // find the extra space charaters in the vector 
-//         {
-//             std::vector<std::string>::iterator iter;
-//             iter = find(word_list.begin(),word_list.end()," ");
-//             word_list.erase(iter); // remove them from the vector
-//         }
-//     }
-//     str_data.get_data() = word_list;
-//     return str_data;
-// }
-// custom_object& remove_stop_words(custom_object& data)
-// {
-//     std::vector<std::string> stop_word;
-//     std::ifstream StopWordsStream("../stop_words.txt");
-//     std::string stop_words_string;
-//     std::getline(StopWordsStream, stop_words_string);
-//     stop_words_string = convert_to_lower(stop_words_string);
-//     split(stop_words_string, ",", stop_word);
-
-//     std::vector<std::string> word_list;
-
-//     for(auto E: data.get_data())
-//     {
-//         std::string buf = E;
-//         is_stop_word(buf, stop_word);
-//         word_list.push_back(buf);
-//     }
-//     data.get_data() = word_list;
-//     return data;
-// }
-
 custom_object& frequencies(custom_object& word_list)
 {
     for(auto E: word_list.get_data())
@@ -342,10 +268,7 @@ custom_object& top25_freqs(custom_object& final_map)
     std::stringstream buf;
     for(itr = final_map.get_final_map().begin(); itr != final_map.get_final_map().end(); itr++)
     {
-        // if(i!= 1)
-        // {
-        //     buf<<"\n";
-        // }
+
         if(i>25){break;}
         i++;
         buf<<itr->second<<"  -  "<<itr->first<<std::endl;
@@ -358,6 +281,5 @@ int main(int argc, char*argv[])
 {
     filename = argv[1];
     TFQuarantine(get_file_name).bind(extract_words).bind(remove_stop_words).bind(frequencies).bind(sort).bind(top25_freqs).execute();
-    //TFTheOne(argv[1]).bind(read_file).bind(filter_chars).bind(normalize).bind(scan).bind(remove_stop_words).bind(frequencies).bind(sort).bind(top25_freqs).printme();
     return 0;
 }
