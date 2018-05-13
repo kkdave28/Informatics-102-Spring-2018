@@ -83,14 +83,14 @@ class custom_object
         }
         custom_object& operator()()
         {
-            if(fcn_set())
+            if(fcn_set()) // If the user has set the function in it's function object
             {
-                fcn_set() = false;
-                return fcn_obj(*this);
+                fcn_set() = false; // function is already called
+                return fcn_obj(*this); // call the function with this/self as argument and return the value returned
             }
-            else
+            else // If the user has not set the function in it's function object
             {
-                return *this;
+                return *this; // Simply return the object itself.
             }
         }
         std::vector<std::string> & get_data()
@@ -155,7 +155,7 @@ class TFQuarantine
         void execute()
         {
             FuncObj guard_callable = [](custom_object&v)-> custom_object&{
-                return v();
+                return v(); // check for function is done in the class so if v has a function, call it else return v
             };
             for(auto func: all_funcs)
             {
@@ -169,7 +169,7 @@ class TFQuarantine
 };
 custom_object& get_file_name(custom_object& arg)
 {
-    arg.get_fcn_obj() = [] (custom_object& another) -> custom_object&{
+    arg.get_fcn_obj() = [] (custom_object& another) -> custom_object&{ // Store the function object in a custom_object then call it later.
         another.get_filename() = filename;
         return another;
     };
@@ -178,7 +178,7 @@ custom_object& get_file_name(custom_object& arg)
 }
 custom_object& extract_words(custom_object& path_to_file)
 {
-    path_to_file.get_fcn_obj() = [](custom_object& another) -> custom_object&
+    path_to_file.get_fcn_obj() = [](custom_object& another) -> custom_object& // Store the function object in a custom_object then call it later.
     {
         std::ifstream PandP(another.get_filename());
         std::string buf;
@@ -219,7 +219,7 @@ custom_object& extract_words(custom_object& path_to_file)
 }
 custom_object& remove_stop_words(custom_object & data)
 {
-    data.get_fcn_obj() = [](custom_object& another) -> custom_object&{
+    data.get_fcn_obj() = [](custom_object& another) -> custom_object&{ // Store the function object in a custom_object then call it later.
         std::vector<std::string> stop_word;
         std::ifstream StopWordsStream("../stop_words.txt");
         std::string stop_words_string;
