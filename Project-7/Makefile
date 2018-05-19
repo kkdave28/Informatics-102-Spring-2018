@@ -3,5 +3,9 @@ default:
 clean:
 	rm -f core.*
 	rm -f vgcore.*
+	rm -f twentyfive
+cldb:
+	rm -f core.*
+	rm -f vgcore.*
 	rm -f *.db
 	rm -f twentyfive

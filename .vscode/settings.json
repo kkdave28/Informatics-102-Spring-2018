@@ -46,6 +46,7 @@
         "ratio": "cpp",
         "thread": "cpp",
         "algorithm": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "string_view": "cpp"
     }
 }

@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include<stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <cstring>
 #include <sstream>
@@ -53,12 +56,6 @@ void is_stop_word(std::string & word, std::vector<std::string>& stopwords)
 
 
 static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
-   int i;
-   for(i = 0; i<argc; i++) {
-      //printf("%s lmao = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-
-   }
-   //printf("\n");
    return 0;
 }
 int safe_exec(sqlite3 * database, const char * arg)
@@ -224,9 +221,7 @@ void load_file_into_database(sqlite3 * database, std::string path)
     int doc_id = read_database(database, buf);
     sprintf(buf, "SELECT MAX(id) FROM words;");
     int word_id = read_database(database,buf);
-    std::cout<<doc_id<<std::endl;
-    std::cout<<word_id<<std::endl;
-
+    
     for(auto E: list_of_words)
     {
         sprintf(buf, "INSERT INTO words (ID, DOCID, VALUE) VALUES (%d, %d, \'%s\');", word_id, doc_id, E.c_str());
@@ -241,10 +236,6 @@ void load_file_into_database(sqlite3 * database, std::string path)
         word_id++;
 
     }
-    //safe_exec(database, (const char *)buf);
-    
-
-//    return;
 }
 void safe_open(const char * name, sqlite3 ** db)
 {
@@ -261,23 +252,29 @@ void safe_open(const char * name, sqlite3 ** db)
       #endif
    }
 }
-
+inline bool exists (const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
+}
 int main(int argc, char const *argv[])
 {
     sqlite3* db;
-    safe_open("test.db", &db);
-    create_db_scheme(db);   
-    load_file_into_database(db,argv[1]);
+    if(!exists("test.db"))
+    {
+        safe_open("test.db", &db);
+        create_db_scheme(db);   
+        load_file_into_database(db,argv[1]);
+    }
+    else
+    {
+        safe_open("test.db", &db);
+    }
     char buf[512];
     sprintf(buf, "SELECT VALUE, COUNT(*) as C FROM words GROUP BY VALUE ORDER BY C DESC;");
     std::vector<std::pair<std::string,int>> ret = get_freqs(db, buf);
-    int i = 0;
-    for(auto E: ret)
+    for(int i=0; i<25; i++)
     {
-        if(i > 24)
-            break;
-        std::cout<<E.first<<"  -  "<<E.second<<std::endl;
-        i++;
+        std::cout<<ret[i].first<<"  -  "<<ret[i].second<<std::endl;
     }
     sqlite3_close(db);
     
