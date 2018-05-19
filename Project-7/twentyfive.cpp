@@ -8,7 +8,7 @@
 #include <fstream>
 #include <cstring>
 #include <sstream>
-#define DEBUG 1
+#define DEBUG 0
 void split(const std::string& str, const std::string& delim, std::vector<std::string> & tokens) // split functions allows the user to split the string w.r.t. the delimiter specified
 {
     size_t prev = 0, pos = 0;
@@ -61,19 +61,6 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
    //printf("\n");
    return 0;
 }
-static int get_doc_id(void *NotUsed, int argc, char **argv, char **azColName, int *p)
-{
-    int i;
-//    std::vector<int> ret;
-    for(i = 0; i<argc; i++) {
-      if(argv[i])
-      {
-          *p = std::atoi(argv[i]);     
-          return 0;
-    }
-   }
-   return 0;
-}
 int safe_exec(sqlite3 * database, const char * arg)
 {
     char *zErrMsg = 0;
@@ -104,12 +91,12 @@ void create_db_scheme(sqlite3 * database)
     
     const char * words =              "CREATE TABLE words("\
                                       "ID                     INTEGER         NOT NULL,"\
-                                      "DOCID                  TEXT            NOT NULL,"\
+                                      "DOCID                  INTEGER         NOT NULL,"\
                                       "VALUE                  TEXT            NOT NULL);";
     
     const char * characters =        "CREATE TABLE characters("\
                                       "ID                     INTEGER         NOT NULL,"\
-                                      "WORDID                 TEXT            NOT NULL,"\
+                                      "WORDID                 INTEGER         NOT NULL,"\
                                       "VALUE                  TEXT            NOT NULL);";
         
     safe_exec(database, docs);
@@ -117,16 +104,16 @@ void create_db_scheme(sqlite3 * database)
     safe_exec(database, characters);
 
 }
-int read_database(sqlite3 * db, std::string path)
+int read_database(sqlite3 * db, char * query)
 {
-    char buf[512];
+    //char buf[512];
     sqlite3_stmt * statement;
-    sprintf(buf, "SELECT ID FROM documents WHERE NAME=\'%s\';",path.c_str());
+
     int row = 0;
     int bytes;
     int data;
     unsigned char * text;
-    sqlite3_prepare(db,buf, sizeof(buf), &statement,NULL);
+    sqlite3_prepare(db,query, strlen(query), &statement,NULL);
     int done = 0;
     while(!done)
     {
@@ -148,6 +135,37 @@ int read_database(sqlite3 * db, std::string path)
         return data;
     }
 
+}
+std::vector<std::pair<std::string,int>> get_freqs(sqlite3 * db, char * query)
+{
+    sqlite3_stmt * statement;
+    int row = 0;
+    unsigned char * text;
+    int freqs;
+    int done = 0;
+    std::vector<std::pair<std::string,int>> ret;
+    std::string push_pair_text;
+    sqlite3_prepare(db,query, strlen(query), &statement,NULL);
+    while(!done || row < 24)
+    {
+      switch(sqlite3_step(statement))
+        {
+            case SQLITE_ROW:
+                push_pair_text = std::string((char *)sqlite3_column_text(statement,0));
+                freqs = sqlite3_column_int(statement,1);
+                ret.push_back(std::pair<std::string, int>(push_pair_text, freqs));
+                //printf("count :%d, data: %d, bytes:%d, text: %s\n", row, data,bytes, text);
+                row++;
+                break;
+            case SQLITE_DONE:
+                done = 1;
+                break;
+            default:
+                printf("Failed\n");
+                exit(EXIT_FAILURE);
+        }
+    }
+    return ret;
 }
 void load_file_into_database(sqlite3 * database, std::string path)
 {
@@ -189,7 +207,10 @@ void load_file_into_database(sqlite3 * database, std::string path)
             {
                 retbuf = E;
                 is_stop_word(retbuf,StopWords);
-                ret.push_back(retbuf);
+                if(retbuf.length() >= 2)
+                {
+                    ret.push_back(retbuf);
+                }
             }
             return ret;
 
@@ -199,8 +220,27 @@ void load_file_into_database(sqlite3 * database, std::string path)
     char buf[512];
     sprintf(buf, "INSERT INTO documents (NAME) VALUES (\'%s\');", path.c_str());
     safe_exec(database, (const char *)buf);
-    int data = read_database(database, path);
-    std::cout<<data<<std::endl;
+    sprintf(buf, "SELECT ID FROM documents WHERE NAME=\'%s\';",path.c_str());
+    int doc_id = read_database(database, buf);
+    sprintf(buf, "SELECT MAX(id) FROM words;");
+    int word_id = read_database(database,buf);
+    std::cout<<doc_id<<std::endl;
+    std::cout<<word_id<<std::endl;
+
+    for(auto E: list_of_words)
+    {
+        sprintf(buf, "INSERT INTO words (ID, DOCID, VALUE) VALUES (%d, %d, \'%s\');", word_id, doc_id, E.c_str());
+        safe_exec(database, (const char *)buf);
+        int char_id = 0;
+        for(auto F: E)
+        {
+            sprintf(buf, "INSERT INTO characters (ID, WORDID, VALUE) VALUES (%d,%d, \'%c\');", char_id, word_id, F);
+            safe_exec(database, (const char *)buf);
+            char_id++;
+        }
+        word_id++;
+
+    }
     //safe_exec(database, (const char *)buf);
     
 
@@ -228,6 +268,17 @@ int main(int argc, char const *argv[])
     safe_open("test.db", &db);
     create_db_scheme(db);   
     load_file_into_database(db,argv[1]);
+    char buf[512];
+    sprintf(buf, "SELECT VALUE, COUNT(*) as C FROM words GROUP BY VALUE ORDER BY C DESC;");
+    std::vector<std::pair<std::string,int>> ret = get_freqs(db, buf);
+    int i = 0;
+    for(auto E: ret)
+    {
+        if(i > 24)
+            break;
+        std::cout<<E.first<<"  -  "<<E.second<<std::endl;
+        i++;
+    }
     sqlite3_close(db);
     
     return 0;
