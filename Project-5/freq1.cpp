@@ -24,7 +24,7 @@ extern "C" std::vector<std::pair<std::string, int>> top25_freqs(std::vector<std:
     {
         interm_map.insert(std::pair<int, std::string> (E.second, E.first));
     }
-        std::multimap<int, std::string>:: iterator itr; // iterator for the multimap
+    std::multimap<int, std::string>:: iterator itr; // iterator for the multimap
     int i = 1; // counter to check the number of pairs printed
     for(itr = interm_map.begin(); itr != interm_map.end(); itr++)
     {

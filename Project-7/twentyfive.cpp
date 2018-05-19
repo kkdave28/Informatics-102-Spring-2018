@@ -237,9 +237,9 @@ void load_file_into_database(sqlite3 * database, std::string path)
 
     }
 }
-void safe_open(const char * name, sqlite3 ** db)
+void safe_open(sqlite3 ** db)
 {
-    int rc = sqlite3_open("test.db", db);
+    int rc = sqlite3_open("twenty-five-database.db", db);
    
    if( rc ) {
        #if DEBUG
@@ -259,15 +259,15 @@ inline bool exists (const std::string& name) {
 int main(int argc, char const *argv[])
 {
     sqlite3* db;
-    if(!exists("test.db"))
+    if(!exists("twenty-five-database.db"))
     {
-        safe_open("test.db", &db);
+        safe_open(&db);
         create_db_scheme(db);   
         load_file_into_database(db,argv[1]);
     }
     else
     {
-        safe_open("test.db", &db);
+        safe_open(&db);
     }
     char buf[512];
     sprintf(buf, "SELECT VALUE, COUNT(*) as C FROM words GROUP BY VALUE ORDER BY C DESC;");
