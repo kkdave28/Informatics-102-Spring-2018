@@ -47,6 +47,7 @@
         "thread": "cpp",
         "algorithm": "cpp",
         "vector": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "*.ipp": "cpp"
     }
 }
