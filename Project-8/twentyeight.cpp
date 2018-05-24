@@ -4,13 +4,10 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
-#include<stdlib.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include <string>
 #include <fstream>
 #include <cstring>
 #include <sstream>
-#include <deque>
 #include <queue>
 #include <thread>
 #include <mutex>
