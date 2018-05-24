@@ -111,21 +111,22 @@ class DataStorageManager : public ActiveWordFrequencyObject
     public:
         DataStorageManager(): ActiveWordFrequencyObject(){
             stop = false;
-            runtime_thread = new std::thread(&DataStorageManager::run, this);
+            runtime_thread = new std::thread(&DataStorageManager::run, this); // creating a thread here which executes the run method.
         }
         void run() 
         {
             while(!stop)
             {
-                if(message_queue.empty())
+                if(message_queue.empty()) // if no message is present for processing, simply dont execute the statements below (wait for a message to pop up)
                     continue;
-                proc_lock.lock();
-                communication_object c = message_queue.front();
-                message_queue.pop();
-                proc_lock.unlock();
+                proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                communication_object c = message_queue.front(); // get the first arrived message
+                message_queue.pop(); // remove it from processing it.
+                proc_lock.unlock(); // unlock for others to mutate the queue.
+                dispatch(c); // pass the message forward.
                 if(c.messages[0] == "die")
                     stop = true;
-                dispatch(c);
+                
             }
         }
         void dispatch (communication_object&c) 
@@ -194,9 +195,9 @@ class DataStorageManager : public ActiveWordFrequencyObject
     
     private:
         std::vector<std::string> data;
-        std::queue<communication_object> message_queue;
-        std::mutex proc_lock;
-        std::thread* runtime_thread;
+        std::queue<communication_object> message_queue; // queue of messages.
+        std::mutex proc_lock; // process lock for implementing thread safe queues.
+        std::thread* runtime_thread; // main thread that runs the entire processes.
         bool stop;
 
 };
@@ -205,7 +206,6 @@ int main(int argc, char const *argv[])
 
     ActiveWordFrequencyObject * x = new DataStorageManager();
     std::vector<std::string> message_string;
-    //x->run();
     message_string.push_back("init");
     message_string.push_back(argv[1]);
     
