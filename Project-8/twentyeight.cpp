@@ -13,6 +13,7 @@
 #include <deque>
 #include <queue>
 #include <thread>
+#include <mutex>
 void split(const std::string& str, const std::string& delim, std::vector<std::string> & tokens) // split functions allows the user to split the string w.r.t. the delimiter specified
 {
     size_t prev = 0, pos = 0;
@@ -43,157 +44,179 @@ std::string convert_to_lower(std::string s) // converts the entire string that c
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     return s;
 }
-struct communication_object;
-class BaseClass: public std::thread
+
+void run(){}
+class example: public std::thread
 {
     public:
-        BaseClass(){}
-        virtual void run() = 0;
-        virtual void dispatch(communication_object& c) = 0;
-        virtual void join() = 0;
-        virtual void put(std::pair<BaseClass*, std::vector<std::string>>) = 0;
-        std::deque<communication_object> message_queue;
-
-
+        example()
+        {
+            std::thread();
+        }
+        void operations()
+        {
+            std::cout<<"Hello"<<std::endl;
+            std::cout<<"world"<<std::endl;
+            std::cout<<"this"<<std::endl;
+            std::cout<<"works"<<std::endl;
+        }
+        void join_thread()
+        {
+            if(joinable())
+                join();
+        }
 };
-
 struct communication_object
 {
-
     public:
-        communication_object(BaseClass * newinstance = nullptr, BaseClass* newreciever = nullptr, BaseClass* newcinstance = nullptr,std::vector<std::string> msg = std::vector<std::string>())
+        communication_object(void * r, void * s, void * w, std::vector<std::string> m)
         {
-            instance = newinstance;
-            reciever = newreciever;
-            current_instance = newcinstance;
-            messages = msg;
+            reciepient = r;
+            stopwordsobj = s;
+            wordfreqobj = w;
+            messages = m;
         }
-        communication_object& operator=(const communication_object& another)
+        communication_object & operator =(const communication_object& another)
         {
-            instance = another.instance;
-            reciever = another.reciever;
+            reciepient = another.reciepient;
+            stopwordsobj = another.stopwordsobj;
+            wordfreqobj = another.wordfreqobj;
             messages = another.messages;
-            current_instance = another.current_instance;
-            return *this;
         }
-        BaseClass * instance;
-        BaseClass * reciever;
-        BaseClass* current_instance;
+        void * reciepient = nullptr;
+        void * stopwordsobj = nullptr;
+        void * wordfreqobj = nullptr;
         std::vector<std::string> messages;
-        
 };
-void send(BaseClass* instance, communication_object & c)
-{
-    c.current_instance = instance;
-    instance->message_queue.push_back(c);
-}
-class ActiveWordFrequencyObject : public BaseClass
+
+class ActiveWordFrequencyObject 
 {
     public:
-        ActiveWordFrequencyObject()
-        {}
-        ActiveWordFrequencyObject(int x)
-        {
-            class_name = __func__;
+        ActiveWordFrequencyObject(){
+            
+        }
+        virtual void run() = 0;
+        virtual void dispatch(communication_object & c) = 0;
+        virtual void join_thread() = 0;
+        virtual void print_data() = 0;
+        virtual void put_in_queue(communication_object & c) = 0;
+
+};
+void send(ActiveWordFrequencyObject * reciever, communication_object &message)
+{
+    reciever->put_in_queue(message);
+}
+class DataStorageManager : public ActiveWordFrequencyObject
+{
+    public:
+        DataStorageManager(): ActiveWordFrequencyObject(){
             stop = false;
-            runtime_thread = new std::thread(&ActiveWordFrequencyObject::run, this);
+            runtime_thread = new std::thread(&DataStorageManager::run, this);
         }
-        void join()
-        {
-            if(runtime_thread->joinable())
-            {
-                runtime_thread->join();
-            }
-        }
-        void put(communication_object & c)
-        {
-            message_queue.push_back(c);
-        }
-    std::deque<communication_object> message_queue;
-    private:
-        std::string class_name;
-        
-        bool stop;
-        std::thread* runtime_thread;
-        void run()
+        void run() 
         {
             while(!stop)
             {
-                communication_object msg = message_queue.front();
-                message_queue.pop_front();
-                msg.current_instance->dispatch(msg);
-                if(msg.messages[0] == "die")
-                {
+                if(message_queue.empty())
+                    continue;
+                proc_lock.lock();
+                communication_object c = message_queue.front();
+                message_queue.pop();
+                proc_lock.unlock();
+                if(c.messages[0] == "die")
                     stop = true;
-                }       
+                dispatch(c);
             }
         }
+        void dispatch (communication_object&c) 
+        {
+            if(c.messages[0] == "init")
+            {
+                init(c);
+            }
+        }
+        void print_data()
+        {
+            for(auto E: data)
+            {
+                std::cout<<E<<std::endl;
+            }
+        }
+        void put_in_queue(communication_object &c)
+        {
+            std::cout<<"message recieved"<<std::endl;
+            proc_lock.lock();
+            message_queue.push(c);
+            proc_lock.unlock();
+        }
+        void init(communication_object &c)
+        {
+            std::function<std::vector<std::string>(std::string)> extract_words = [] (std::string filename) -> std::vector<std::string>
+            {
+                std::ifstream PandP(filename);
+                const char* EscapeChars = "!@#$%*()_-[]\"\';:\?/.,\n\0";
+                std::string buf;
+                std::vector<std::string> data;
+                while(PandP && std::getline(PandP, buf)) // processing the iput file
+                {
+                    if(buf.length() < 2) // if the line read is an empty line
+                    {
+                        continue;
+                    }
+                    else
+                    {
 
-};
-class DataStorageManager: public ActiveWordFrequencyObject
-{
-    public:
-        DataStorageManager(): ActiveWordFrequencyObject(){}
+                        removeCharsFromString(buf, EscapeChars); //remove escape chars from the string
+                        buf = convert_to_lower(buf); // convert the entire string to lowercase
+                        std::istringstream iss(buf); // string as a stream of characters
+                        std::copy(std::istream_iterator<std::string>(iss),std::istream_iterator<std::string>(),std::back_inserter(data)); // same as a for loop, but captures all the string and puts it into a vector of strings.
+                        while(std::find(data.begin(),data.end()," ") != data.end()) // find the extra space charaters in the vector 
+                        {
+                            std::vector<std::string>::iterator iter;
+                            iter = find(data.begin(),data.end()," ");
+                            data.erase(iter); // remove them from the vector
+                        }
+                    }
+                }
+                return data;
+
+            };
+            std::cout<<"CALLED"<<std::endl;
+            data = extract_words(c.messages[1]);
+
+        }
         
+        void join_thread()
+        {
+            if(runtime_thread->joinable())
+                runtime_thread->join();
+        }
+    
+    private:
+        std::vector<std::string> data;
+        std::queue<communication_object> message_queue;
+        std::mutex proc_lock;
+        std::thread* runtime_thread;
+        bool stop;
 
 };
-// class DataStorageManager: public ActiveWordFrequencyObject
-// {
-//     public:
-//         DataStorageManager(): ActiveWordFrequencyObject(){}
-//         void dispatch(std::pair<BaseClass*, std::vector<std::string>> message)
-//         {
-//             if(message.second[0] == "init")
-//             {
-//                 path_to_file = message.second[1];
-//                 stop_words_manager = message.first;
-//                 std::function<std::vector<std::string>(std::string)> extract_words = [] (std::string filename) -> std::vector<std::string>
-//                 {
-//                         std::ifstream PandP(filename);
-//                         std::ifstream StopWordsStream("../stop_words.txt");
-//                         const char* EscapeChars = "!@#$%*()_-[]\"\';:\?/.,\n\0";
-//                         std::string stop_words;
-//                         std::vector<std::string> StopWords;
-//                         std::getline(StopWordsStream,stop_words);
-//                         split(stop_words, ",",StopWords);
-//                         std::string buf;
-//                         std::vector<std::string> data;
-//                         while(PandP && std::getline(PandP, buf)) // processing the iput file
-//                         {
-//                             if(buf.length() == 0) // if the line read is an empty line
-//                             {
-//                                 continue;
-//                             }
-//                             else
-//                             {
-//                                 removeCharsFromString(buf, EscapeChars); //remove escape chars from the string
-//                                 buf = convert_to_lower(buf); // convert the entire string to lowercase
-//                                 std::istringstream iss(buf); // string as a stream of characters
-//                                 std::copy(std::istream_iterator<std::string>(iss),std::istream_iterator<std::string>(),std::back_inserter(data)); // same as a for loop, but captures all the string and puts it into a vector of strings.
-//                                 while(std::find(data.begin(),data.end()," ") != data.end()) // find the extra space charaters in the vector 
-//                                 {
-//                                     std::vector<std::string>::iterator iter;
-//                                     iter = find(data.begin(),data.end()," ");
-//                                     data.erase(iter); // remove them from the vector
-//                                 }
-//                             }
-//                         }
-//                         return data;
-//                 };
-//                 list_of_words = extract_words(path_to_file);
-
-//             }
-
-            
-//         }
-
-//     private:
-//         std::string path_to_file;
-//         BaseClass * stop_words_manager;
-//         std::vector<std::string> list_of_words;
-
-// };  
-int main(int argc, char *argv[])
+int main(int argc, char const *argv[])
 {
+
+    ActiveWordFrequencyObject * x = new DataStorageManager();
+    std::vector<std::string> message_string;
+    //x->run();
+    message_string.push_back("init");
+    message_string.push_back(argv[1]);
+    
+    communication_object c(nullptr, nullptr, nullptr, message_string);
+    send(x, c);
+    message_string.clear();
+    message_string.push_back("die");
+    communication_object d(nullptr, nullptr, nullptr, message_string);
+    send(x, d);
+       
+    x->join_thread();
+    x->print_data(); 
     return 0;
 }
