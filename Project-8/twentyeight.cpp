@@ -11,6 +11,7 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#define DEBUG 0
 void split(const std::string& str, const std::string& delim, std::vector<std::string> & tokens) // split functions allows the user to split the string w.r.t. the delimiter specified
 {
     size_t prev = 0, pos = 0;
@@ -63,6 +64,9 @@ class example: public std::thread
                 join();
         }
 };
+typedef std::vector<void *> communication_object;
+// works with std::vector of void pointers.
+/*
 struct communication_object
 {
     public:
@@ -85,7 +89,7 @@ struct communication_object
         void * wordfreqobj = nullptr;
         std::vector<std::string> messages;
 };
-
+*/
 class ActiveWordFrequencyObject 
 {
     public:
@@ -93,13 +97,13 @@ class ActiveWordFrequencyObject
             
         }
         virtual void run() = 0;
-        virtual void dispatch(communication_object & c) = 0;
+        virtual void dispatch(communication_object  c) = 0;
         virtual void join_thread() = 0;
         virtual void print_data() = 0;
-        virtual void put_in_queue(communication_object & c) = 0;
+        virtual void put_in_queue(communication_object  c) = 0;
 
 };
-void send(ActiveWordFrequencyObject * reciever, communication_object &message)
+void send(ActiveWordFrequencyObject * reciever, communication_object message)
 {
     reciever->put_in_queue(message);
 }
@@ -109,29 +113,50 @@ class DataStorageManager : public ActiveWordFrequencyObject
         DataStorageManager(): ActiveWordFrequencyObject(){
             stop = false;
             runtime_thread = new std::thread(&DataStorageManager::run, this); // creating a thread here which executes the run method.
+            stopwords = nullptr;
         }
         void run() 
         {
             while(!stop)
             {
-                if(message_queue.empty()) // if no message is present for processing, simply dont execute the statements below (wait for a message to pop up)
-                    continue;
                 proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                if(message_queue.empty()) // if no message is present for processing, simply dont execute the statements below (wait for a message to pop up)
+                {
+                    proc_lock.unlock();    
+                    continue;
+                }
+                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
                 communication_object c = message_queue.front(); // get the first arrived message
                 message_queue.pop(); // remove it from processing it.
                 proc_lock.unlock(); // unlock for others to mutate the queue.
                 dispatch(c); // pass the message forward.
-                if(c.messages[0] == "die")
+                if(*static_cast<std::string*>(c[0]) == "die")
                     stop = true;
                 
             }
         }
-        void dispatch (communication_object&c) 
+        void dispatch (communication_object c) 
         {
-            if(c.messages[0] == "init")
+            if(*static_cast<std::string*>(c[0]) == "init")
             {
-                init(c);
+                init(std::vector<void*>(c.begin()+1, c.end()));
             }
+            else if(*static_cast<std::string*>(c[0]) == "send_word_freqs")
+            {
+                process_words(c);
+            }
+
+        }
+        void process_words(communication_object c)
+        {   /*
+            for(auto E: data)
+            {
+                communication_object d (nullptr, nullptr, nullptr, std::vector<std::string>{"filter", E});
+                send(stopwords, d);
+            }
+            communication_object d(c.reciepient, nullptr, nullptr, std::vector<std::string>{"top25"});
+            send(stopwords, d);
+            */
         }
         void print_data()
         {
@@ -140,15 +165,18 @@ class DataStorageManager : public ActiveWordFrequencyObject
                 std::cout<<E<<std::endl;
             }
         }
-        void put_in_queue(communication_object &c)
+        void put_in_queue(communication_object c)
         {
+            #if DEBUG
             std::cout<<"message recieved"<<std::endl;
+            #endif
             proc_lock.lock();
             message_queue.push(c);
             proc_lock.unlock();
         }
-        void init(communication_object &c)
+        void init(communication_object c)
         {
+            stopwords = reinterpret_cast<ActiveWordFrequencyObject*>(c[1]);
             std::function<std::vector<std::string>(std::string)> extract_words = [] (std::string filename) -> std::vector<std::string>
             {
                 std::ifstream PandP(filename);
@@ -179,8 +207,10 @@ class DataStorageManager : public ActiveWordFrequencyObject
                 return data;
 
             };
+            #if DEBUG
             std::cout<<"CALLED"<<std::endl;
-            data = extract_words(c.messages[1]);
+            #endif
+            data = extract_words(*static_cast<std::string*>(c[0]));
 
         }
         
@@ -196,24 +226,70 @@ class DataStorageManager : public ActiveWordFrequencyObject
         std::mutex proc_lock; // process lock for implementing thread safe queues.
         std::thread* runtime_thread; // main thread that runs the entire processes.
         bool stop;
+        ActiveWordFrequencyObject * stopwords;
 
 };
+/*
+class StopWordsManager : public ActiveWordFrequencyObject
+{
+    public:
+        StopWordsManager() : ActiveWordFrequencyObject() 
+        {
+            stop = false;
+            runtime_thread = new std::thread(&StopWordsManager::run, this);
+        }
+        void run()
+        {
+            while(!stop)
+            {
+                proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                if(message_queue.empty()) // if no message is present for processing, simply dont execute the statements below (wait for a message to pop up)
+                {
+                    proc_lock.unlock();    
+                    continue;
+                }
+                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                communication_object c = message_queue.front(); // get the first arrived message
+                message_queue.pop(); // remove it from processing it.
+                proc_lock.unlock(); // unlock for others to mutate the queue.
+                dispatch(c); // pass the message forward.
+                if(c.messages[0] == "die")
+                    stop = true;
+                
+            }
+        }
+        void dispatch(communication_object & c)
+        {
+            if(c.messages[0] == "init")
+            {
+                init(c);
+            }
+        }
+        void init(communication_object & c){}
+        void join_thread(){}
+        void print_data(){}
+        void put_in_queue(communication_object & c){}
+    private:
+        std::vector<std::string> data;
+        std::queue<communication_object> message_queue; // queue of messages.
+        std::mutex proc_lock; // process lock for implementing thread safe queues.
+        std::thread* runtime_thread; // main thread that runs the entire processes.
+        bool stop;
+        ActiveWordFrequencyObject * stopwords;
+};*/
 int main(int argc, char const *argv[])
 {
 
-    ActiveWordFrequencyObject * x = new DataStorageManager();
-    std::vector<std::string> message_string;
-    message_string.push_back("init");
-    message_string.push_back(argv[1]);
-    
-    communication_object c(nullptr, nullptr, nullptr, message_string);
-    send(x, c);
-    message_string.clear();
-    message_string.push_back("die");
-    communication_object d(nullptr, nullptr, nullptr, message_string);
-    send(x, d);
-       
-    x->join_thread();
-    x->print_data(); 
+    ActiveWordFrequencyObject * data = new DataStorageManager();
+    send(data,std::vector<void*>{new std::string("init"), new std::string(argv[1]), nullptr});
+    send(data,std::vector<void*>{new std::string("die")});
+    /*
+    communication_object c(nullptr, nullptr, nullptr, std::vector<std::string>{"init", argv[1]});
+    send(data, c);
+    communication_object d(nullptr, nullptr, nullptr, std::vector<std::string>{"die"});
+    send(data, d);
+    */
+    data->join_thread();
+    data->print_data(); 
     return 0;
 }
