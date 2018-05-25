@@ -1,7 +1,15 @@
+CXXFLAGS = -ggdb -std=c++11 -O3 -lpthread
+
+default: twentyeight.cpp twentynine.cpp
+	$(CXX) twentyeight.cpp  $(CXXFLAGS) -o twentyeight
+	$(CXX) twentynine.cpp $(CXXFLAGS) -o twentynine
+
 28: twentyeight.cpp
-	g++ twentyeight.cpp -ggdb -std=c++11 -O3 -lpthread -o twentyeight
+	$(CXX) twentyeight.cpp  $(CXXFLAGS) -o twentyeight
+
 29: twentynine.cpp
-	g++ twentynine.cpp -ggdb -std=c++11 -O3 -lpthread -o twentynine
+	$(CXX) twentynine.cpp $(CXXFLAGS) -o twentynine
+
 clean:
 	rm -f twentyeight
 	rm -f twentynine
