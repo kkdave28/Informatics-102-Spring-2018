@@ -1,4 +1,4 @@
-CXXFLAGS = -ggdb -std=c++11 -O3 -lpthread
+CXXFLAGS = -ggdb -std=c++11 -O3 -pthread
 
 default: twentyeight.cpp twentynine.cpp
 	$(CXX) twentyeight.cpp  $(CXXFLAGS) -o twentyeight
