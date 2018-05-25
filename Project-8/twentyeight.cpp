@@ -65,30 +65,7 @@ bool is_stop_word(std::string & word, std::vector<std::string>& stopwords)
 }
 typedef std::vector<void *> communication_object;
 // works with std::vector of void pointers.
-/*
-struct communication_object
-{
-    public:
-        communication_object(void * r, void * s, void * w, std::vector<std::string> m)
-        {
-            reciepient = r;
-            stopwordsobj = s;
-            wordfreqobj = w;
-            messages = m;
-        }
-        communication_object & operator =(const communication_object& another)
-        {
-            reciepient = another.reciepient;
-            stopwordsobj = another.stopwordsobj;
-            wordfreqobj = another.wordfreqobj;
-            messages = another.messages;
-        }
-        void * reciepient = nullptr;
-        void * stopwordsobj = nullptr;
-        void * wordfreqobj = nullptr;
-        std::vector<std::string> messages;
-};
-*/
+
 class ActiveWordFrequencyObject 
 {
     public:
