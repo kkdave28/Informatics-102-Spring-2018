@@ -43,27 +43,19 @@ std::string convert_to_lower(std::string s) // converts the entire string that c
     return s;
 }
 
-void run(){}
-class example: public std::thread
+
+bool is_stop_word(std::string & word, std::vector<std::string>& stopwords)
 {
-    public:
-        example()
+    for(auto E: stopwords)
+    {
+        if(word == E)
         {
-            std::thread();
+            word = "";
+            return true;
         }
-        void operations()
-        {
-            std::cout<<"Hello"<<std::endl;
-            std::cout<<"world"<<std::endl;
-            std::cout<<"this"<<std::endl;
-            std::cout<<"works"<<std::endl;
-        }
-        void join_thread()
-        {
-            if(joinable())
-                join();
-        }
-};
+    }
+    return false;
+}
 typedef std::vector<void *> communication_object;
 // works with std::vector of void pointers.
 /*
@@ -143,20 +135,22 @@ class DataStorageManager : public ActiveWordFrequencyObject
             }
             else if(*static_cast<std::string*>(c[0]) == "send_word_freqs")
             {
-                process_words(c);
+                process_words(std::vector<void*>(c.begin()+1, c.end()));
+            }
+            else
+            {
+                send(stopwords, c);
             }
 
         }
         void process_words(communication_object c)
-        {   /*
-            for(auto E: data)
+        {   
+            //ActiveWordFrequencyObject * recipient = reinterpret_cast<ActiveWordFrequencyObject*>(c[0]);
+            for(auto words: data)
             {
-                communication_object d (nullptr, nullptr, nullptr, std::vector<std::string>{"filter", E});
-                send(stopwords, d);
+                send(stopwords, std::vector<void*>{new std::string("filter"), new std::string(words)});
             }
-            communication_object d(c.reciepient, nullptr, nullptr, std::vector<std::string>{"top25"});
-            send(stopwords, d);
-            */
+          //  send(stopwords, std::vector<void*>{new std::string("top25"), recipient});
         }
         void print_data()
         {
@@ -176,7 +170,8 @@ class DataStorageManager : public ActiveWordFrequencyObject
         }
         void init(communication_object c)
         {
-            stopwords = reinterpret_cast<ActiveWordFrequencyObject*>(c[1]);
+            stopwords = static_cast<ActiveWordFrequencyObject*>(c[1]);
+            std::cout<<"HERE"<<std::endl;
             std::function<std::vector<std::string>(std::string)> extract_words = [] (std::string filename) -> std::vector<std::string>
             {
                 std::ifstream PandP(filename);
@@ -229,7 +224,7 @@ class DataStorageManager : public ActiveWordFrequencyObject
         ActiveWordFrequencyObject * stopwords;
 
 };
-/*
+
 class StopWordsManager : public ActiveWordFrequencyObject
 {
     public:
@@ -238,7 +233,7 @@ class StopWordsManager : public ActiveWordFrequencyObject
             stop = false;
             runtime_thread = new std::thread(&StopWordsManager::run, this);
         }
-        void run()
+        void run() 
         {
             while(!stop)
             {
@@ -253,35 +248,81 @@ class StopWordsManager : public ActiveWordFrequencyObject
                 message_queue.pop(); // remove it from processing it.
                 proc_lock.unlock(); // unlock for others to mutate the queue.
                 dispatch(c); // pass the message forward.
-                if(c.messages[0] == "die")
+                if(*static_cast<std::string*>(c[0]) == "die")
                     stop = true;
                 
             }
         }
-        void dispatch(communication_object & c)
+        void dispatch(communication_object c)
         {
-            if(c.messages[0] == "init")
+            if(*static_cast<std::string*>(c[0]) == "init")
             {
-                init(c);
+                init(std::vector<void*>(c.begin()+1, c.end()));
+            }
+            else if(*static_cast<std::string*>(c[0]) == "filter")
+            {
+                filter(std::vector<void*>(c.begin()+1, c.end()));
+            }
+            // else // implement this after having created word freq manager.
+            // {
+            //     send(word_freq_manager, c);
+            // }
+        }
+        void init(communication_object c)
+        {
+            word_freq_manager = static_cast<ActiveWordFrequencyObject*>(c[0]);
+            std::ifstream StopWordsStream("../stop_words.txt");
+            std::string stop_words_string;
+            std::getline(StopWordsStream, stop_words_string);
+            stop_words_string = convert_to_lower(stop_words_string);
+            split(stop_words_string, ",", stop_words);
+            
+        }
+        void join_thread()
+        {
+            if(runtime_thread->joinable())
+                runtime_thread->join();
+        }
+        void print_data()
+        {
+            for(auto E: filtered_words)
+            {
+                std::cout<<E<<std::endl;
             }
         }
-        void init(communication_object & c){}
-        void join_thread(){}
-        void print_data(){}
-        void put_in_queue(communication_object & c){}
+        void put_in_queue(communication_object c)
+        {
+            proc_lock.lock();
+            message_queue.push(c);
+            proc_lock.unlock();
+        }
+        void filter(communication_object c)
+        {
+            // std::string word = *;
+            if(!is_stop_word(*static_cast<std::string*>(c[0]), stop_words))
+            {
+                filtered_words.push_back(*static_cast<std::string*>(c[0]));
+                //send(word_freq_manager, std::vector<void*>{new std::string("word"), new std::string(word)});
+            }
+
+        }
     private:
-        std::vector<std::string> data;
+        std::vector<std::string> stop_words;
         std::queue<communication_object> message_queue; // queue of messages.
         std::mutex proc_lock; // process lock for implementing thread safe queues.
         std::thread* runtime_thread; // main thread that runs the entire processes.
         bool stop;
-        ActiveWordFrequencyObject * stopwords;
-};*/
+        ActiveWordFrequencyObject * word_freq_manager;
+        std::vector<std::string> filtered_words;
+};
 int main(int argc, char const *argv[])
 {
 
     ActiveWordFrequencyObject * data = new DataStorageManager();
-    send(data,std::vector<void*>{new std::string("init"), new std::string(argv[1]), nullptr});
+    ActiveWordFrequencyObject * sw = new StopWordsManager();
+    send(data,std::vector<void*>{new std::string("init"), new std::string(argv[1]), sw});
+    send(sw, std::vector<void*>{new std::string("init"), nullptr});
+    send(data, std::vector<void*>{new std::string("send_word_freqs")});
     send(data,std::vector<void*>{new std::string("die")});
     /*
     communication_object c(nullptr, nullptr, nullptr, std::vector<std::string>{"init", argv[1]});
@@ -289,7 +330,10 @@ int main(int argc, char const *argv[])
     communication_object d(nullptr, nullptr, nullptr, std::vector<std::string>{"die"});
     send(data, d);
     */
+   
     data->join_thread();
-    data->print_data(); 
+    sw->join_thread(); 
+    sw->print_data();
+    //data->print_data(); 
     return 0;
 }
