@@ -48,6 +48,13 @@
         "algorithm": "cpp",
         "vector": "cpp",
         "string_view": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "strstream": "cpp",
+        "complex": "cpp",
+        "deque": "cpp",
+        "iomanip": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "valarray": "cpp"
     }
 }

@@ -12,6 +12,13 @@
 #include <thread>
 #include <mutex>
 #define DEBUG 0
+class WordFreqException{
+    public:
+        WordFreqException(std::string error_message)
+        {
+            std::cerr<<"Word Freq Exception: "<<error_message<<std::endl;
+        }
+};
 void split(const std::string& str, const std::string& delim, std::vector<std::string> & tokens) // split functions allows the user to split the string w.r.t. the delimiter specified
 {
     size_t prev = 0, pos = 0;
@@ -145,12 +152,12 @@ class DataStorageManager : public ActiveWordFrequencyObject
         }
         void process_words(communication_object c)
         {   
-            //ActiveWordFrequencyObject * recipient = reinterpret_cast<ActiveWordFrequencyObject*>(c[0]);
+            ActiveWordFrequencyObject * recipient = reinterpret_cast<ActiveWordFrequencyObject*>(c[0]);
             for(auto words: data)
             {
                 send(stopwords, std::vector<void*>{new std::string("filter"), new std::string(words)});
             }
-          //  send(stopwords, std::vector<void*>{new std::string("top25"), recipient});
+            send(stopwords, std::vector<void*>{new std::string("top25"), recipient});
         }
         void print_data()
         {
@@ -171,7 +178,6 @@ class DataStorageManager : public ActiveWordFrequencyObject
         void init(communication_object c)
         {
             stopwords = static_cast<ActiveWordFrequencyObject*>(c[1]);
-            std::cout<<"HERE"<<std::endl;
             std::function<std::vector<std::string>(std::string)> extract_words = [] (std::string filename) -> std::vector<std::string>
             {
                 std::ifstream PandP(filename);
@@ -214,7 +220,7 @@ class DataStorageManager : public ActiveWordFrequencyObject
             if(runtime_thread->joinable())
                 runtime_thread->join();
         }
-    
+
     private:
         std::vector<std::string> data;
         std::queue<communication_object> message_queue; // queue of messages.
@@ -250,7 +256,7 @@ class StopWordsManager : public ActiveWordFrequencyObject
                 dispatch(c); // pass the message forward.
                 if(*static_cast<std::string*>(c[0]) == "die")
                     stop = true;
-                
+
             }
         }
         void dispatch(communication_object c)
@@ -263,10 +269,10 @@ class StopWordsManager : public ActiveWordFrequencyObject
             {
                 filter(std::vector<void*>(c.begin()+1, c.end()));
             }
-            // else // implement this after having created word freq manager.
-            // {
-            //     send(word_freq_manager, c);
-            // }
+            else // implement this after having created word freq manager.
+            {
+                 send(word_freq_manager, c);
+            }
         }
         void init(communication_object c)
         {
@@ -298,11 +304,10 @@ class StopWordsManager : public ActiveWordFrequencyObject
         }
         void filter(communication_object c)
         {
-            // std::string word = *;
             if(!is_stop_word(*static_cast<std::string*>(c[0]), stop_words))
             {
                 filtered_words.push_back(*static_cast<std::string*>(c[0]));
-                //send(word_freq_manager, std::vector<void*>{new std::string("word"), new std::string(word)});
+                send(word_freq_manager, std::vector<void*>{new std::string("word"), new std::string(*static_cast<std::string*>(c[0]))});
             }
 
         }
@@ -315,25 +320,187 @@ class StopWordsManager : public ActiveWordFrequencyObject
         ActiveWordFrequencyObject * word_freq_manager;
         std::vector<std::string> filtered_words;
 };
+class WordFrequencyManager : public ActiveWordFrequencyObject
+{
+    public:
+        WordFrequencyManager() : ActiveWordFrequencyObject()
+        {
+            stop = false;
+            runtime_thread = new std::thread(&WordFrequencyManager::run, this);
+        }
+        void dispatch(communication_object c)
+        {
+            if(*static_cast<std::string*>(c[0]) == "word")
+            {
+                increment(std::vector<void*>(c.begin()+1, c.end()));
+            }
+            else if(*static_cast<std::string*>(c[0]) == "top25")
+            {
+                top25(std::vector<void*>(c.begin()+1, c.end()));
+            }
+        }
+        void top25(communication_object c)
+        {
+            ActiveWordFrequencyObject * recipient = static_cast<ActiveWordFrequencyObject*>(c[0]);
+            send(recipient, std::vector<void*> {new std::string("top25"),new std::vector<std::pair<std::string, int>>(sort_map())});
+        }
+        std::vector<std::pair<std::string, int>> sort_map()
+        {
+            word_freqs.erase("");
+            word_freqs.erase("s");
+            std::multimap<int, std::string, std::greater<int>> interm_map;
+            std::vector<std::pair<std::string, int>> fin_map;
+            for (auto E: word_freqs)
+            {
+                interm_map.insert(std::pair<int, std::string> (E.second, E.first));
+            }
+            std::multimap<int, std::string>:: iterator itr; // iterator for the multimap
+            int i = 1; // counter to check the number of pairs printed
+            for(itr = interm_map.begin(); itr != interm_map.end(); itr++)
+            {
+                if(i >25)
+                    break;
+                i++;
+                fin_map.push_back(std::pair<std::string,int>(itr->second, itr->first));
+            }
+            return fin_map;
+        }
+        void increment(communication_object c)
+        {
+            word_freqs[*static_cast<std::string*>(c[0])] +=1;
+        }
+        void put_in_queue(communication_object c)
+        {
+            proc_lock.lock();
+            message_queue.push(c);
+            proc_lock.unlock();
+        }
+        void join_thread()
+        {
+            if(runtime_thread->joinable())
+                runtime_thread->join();
+        }
+        void run()
+        {
+            while(!stop)
+            {
+                proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                if(message_queue.empty()) // if no message is present for processing, simply dont execute the statements below (wait for a message to pop up)
+                {
+                    proc_lock.unlock();    
+                    continue;
+                }
+                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                communication_object c = message_queue.front(); // get the first arrived message
+                message_queue.pop(); // remove it from processing it.
+                proc_lock.unlock(); // unlock for others to mutate the queue.
+                dispatch(c); // pass the message forward.
+                if(*static_cast<std::string*>(c[0]) == "die")
+                    stop = true;
+
+            }
+        }
+        void print_data(){}
+    private:
+        std::map<std::string, int> word_freqs;
+        std::queue<communication_object> message_queue;
+        std::mutex proc_lock;
+        std::thread * runtime_thread;
+        bool stop;
+};
+class WordFrequencyController : public ActiveWordFrequencyObject
+{
+    public:
+        WordFrequencyController() : ActiveWordFrequencyObject()
+        {
+            stop = false;
+            runtime_thread = new std::thread(&WordFrequencyController::run, this);
+        }
+        void run()
+        {
+            while(!stop)
+            {
+                proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                if(message_queue.empty()) // if no message is present for processing, simply dont execute the statements below (wait for a message to pop up)
+                {
+                    proc_lock.unlock();    
+                    continue;
+                }
+                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
+                communication_object c = message_queue.front(); // get the first arrived message
+                message_queue.pop(); // remove it from processing it.
+                proc_lock.unlock(); // unlock for others to mutate the queue.
+                dispatch(c); // pass the message forward.
+                if(*static_cast<std::string*>(c[0]) == "die")
+                    stop = true;
+
+            }
+        }
+        void dispatch(communication_object c)
+        {
+            if(*static_cast<std::string*>(c[0]) == "run")
+            {
+                begin_processing(std::vector<void*>(c.begin()+1, c.end()));
+            }
+            else if(*static_cast<std::string*>(c[0]) == "top25")
+            {
+                fin_map = *static_cast<std::vector<std::pair<std::string,int>>*>(c[1]);
+                print_data();
+            }
+            else
+            {
+                throw(WordFreqException("Message not understood"));
+            }
+        }
+        void begin_processing(communication_object c) 
+        {
+            storage_manager = static_cast<ActiveWordFrequencyObject*>(c[0]);
+            send(storage_manager, std::vector<void *>{new std::string("send_word_freqs"), this});
+        }
+        void join_thread()
+        {
+            if(runtime_thread->joinable())
+                runtime_thread->join();
+        }
+        void print_data() 
+        {
+            for(auto E: fin_map)
+            {
+                std::cout<<E.first<<"  -  "<<E.second<<std::endl;
+            }
+            send(storage_manager, std::vector<void*>{new std::string("die")});
+            stop = true;
+        }
+        void put_in_queue(communication_object c)
+        {
+            proc_lock.lock();
+            message_queue.push(c);
+            proc_lock.unlock();
+        }
+    private:
+        std::queue<communication_object> message_queue;
+        std::mutex proc_lock;
+        std::thread * runtime_thread;
+        std::vector<std::pair<std::string,int>> fin_map;
+        ActiveWordFrequencyObject * storage_manager;
+        bool stop;      
+};
 int main(int argc, char const *argv[])
 {
 
-    ActiveWordFrequencyObject * data = new DataStorageManager();
-    ActiveWordFrequencyObject * sw = new StopWordsManager();
-    send(data,std::vector<void*>{new std::string("init"), new std::string(argv[1]), sw});
-    send(sw, std::vector<void*>{new std::string("init"), nullptr});
-    send(data, std::vector<void*>{new std::string("send_word_freqs")});
-    send(data,std::vector<void*>{new std::string("die")});
-    /*
-    communication_object c(nullptr, nullptr, nullptr, std::vector<std::string>{"init", argv[1]});
-    send(data, c);
-    communication_object d(nullptr, nullptr, nullptr, std::vector<std::string>{"die"});
-    send(data, d);
-    */
-   
-    data->join_thread();
-    sw->join_thread(); 
-    sw->print_data();
-    //data->print_data(); 
+    ActiveWordFrequencyObject * word_freq_manager = new WordFrequencyManager();
+    ActiveWordFrequencyObject * stop_words_manager = new StopWordsManager();
+    send(stop_words_manager, std::vector<void*>{new std::string("init"), word_freq_manager});
+
+    ActiveWordFrequencyObject * storage_manager = new DataStorageManager();
+    send(storage_manager, std::vector<void*>{new std::string("init"), new std::string(argv[1]), stop_words_manager});
+    
+    ActiveWordFrequencyObject * word_freq_controller = new WordFrequencyController();
+    send(word_freq_controller, std::vector<void*>{new std::string("run"), storage_manager});
+
+    word_freq_controller->join_thread();
+    stop_words_manager->join_thread();
+    storage_manager->join_thread();
+    word_freq_controller->join_thread();
     return 0;
 }
