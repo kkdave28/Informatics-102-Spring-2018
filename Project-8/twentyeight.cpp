@@ -12,7 +12,8 @@
 #include <thread>
 #include <mutex>
 #define DEBUG 0
-class WordFreqException{
+class WordFreqException
+{
     public:
         WordFreqException(std::string error_message)
         {
@@ -63,6 +64,7 @@ bool is_stop_word(std::string & word, std::vector<std::string>& stopwords)
     }
     return false;
 }
+
 typedef std::vector<void *> communication_object;
 // works with std::vector of void pointers.
 
@@ -86,7 +88,8 @@ void send(ActiveWordFrequencyObject * reciever, communication_object message)
 class DataStorageManager : public ActiveWordFrequencyObject
 {
     public:
-        DataStorageManager(): ActiveWordFrequencyObject(){
+        DataStorageManager(): ActiveWordFrequencyObject()
+        {
             stop = false;
             runtime_thread = new std::thread(&DataStorageManager::run, this); // creating a thread here which executes the run method.
             stopwords = nullptr;
@@ -101,7 +104,6 @@ class DataStorageManager : public ActiveWordFrequencyObject
                     proc_lock.unlock();    
                     continue;
                 }
-                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
                 communication_object c = message_queue.front(); // get the first arrived message
                 message_queue.pop(); // remove it from processing it.
                 proc_lock.unlock(); // unlock for others to mutate the queue.
@@ -215,6 +217,7 @@ class StopWordsManager : public ActiveWordFrequencyObject
         {
             stop = false;
             runtime_thread = new std::thread(&StopWordsManager::run, this);
+            word_freq_manager = nullptr;
         }
         void run() 
         {
@@ -226,7 +229,6 @@ class StopWordsManager : public ActiveWordFrequencyObject
                     proc_lock.unlock();    
                     continue;
                 }
-                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
                 communication_object c = message_queue.front(); // get the first arrived message
                 message_queue.pop(); // remove it from processing it.
                 proc_lock.unlock(); // unlock for others to mutate the queue.
@@ -286,7 +288,6 @@ class StopWordsManager : public ActiveWordFrequencyObject
                 filtered_words.push_back(*static_cast<std::string*>(c[0]));
                 send(word_freq_manager, std::vector<void*>{new std::string("word"), new std::string(*static_cast<std::string*>(c[0]))});
             }
-
         }
     private:
         std::vector<std::string> stop_words;
@@ -367,7 +368,6 @@ class WordFrequencyManager : public ActiveWordFrequencyObject
                     proc_lock.unlock();    
                     continue;
                 }
-                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
                 communication_object c = message_queue.front(); // get the first arrived message
                 message_queue.pop(); // remove it from processing it.
                 proc_lock.unlock(); // unlock for others to mutate the queue.
@@ -392,6 +392,7 @@ class WordFrequencyController : public ActiveWordFrequencyObject
         {
             stop = false;
             runtime_thread = new std::thread(&WordFrequencyController::run, this);
+            storage_manager = nullptr;
         }
         void run()
         {
@@ -403,7 +404,6 @@ class WordFrequencyController : public ActiveWordFrequencyObject
                     proc_lock.unlock();    
                     continue;
                 }
-                //proc_lock.lock(); // Thread safe queues implemetation by using mutex which ensures that no simultaneous push/pop takes place.
                 communication_object c = message_queue.front(); // get the first arrived message
                 message_queue.pop(); // remove it from processing it.
                 proc_lock.unlock(); // unlock for others to mutate the queue.
